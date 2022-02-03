@@ -3,7 +3,6 @@ import 'package:yt_songs/downloads_screen.dart';
 import 'package:yt_songs/local_data.dart';
 import 'package:yt_songs/search_screen.dart';
 import 'package:yt_songs/settings.dart';
-import 'package:yt_songs/theme.dart';
 
 void main() {
   runApp(MyApp());
