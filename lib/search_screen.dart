@@ -48,9 +48,8 @@ class _SearchScreenState extends State<SearchScreen> {
     page = 0;
     String baseUrl = "https://www.google.com/search?q=%22youtube.com%2Fwatch%3Fv%3D%22+";
     currentSearchUrl = baseUrl + Uri.encodeFull(searchController.text);
-    String urlString = currentSearchUrl + "&start=" + page.toString();
-    urlString = urlString.replaceAll("%20", "+").replaceAll("&", "%26") + "&tbm=vid";
-    print("URL: ---------------- " + urlString);
+    String urlString = currentSearchUrl.replaceAll("%20", "+").replaceAll("&", "%26");
+    urlString = urlString + "&start=" + page.toString() + "&tbm=vid";
     var response = await get(Uri.parse(urlString));
     if(response.statusCode == 200){
       String htmlDocument = response.body;
