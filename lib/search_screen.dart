@@ -50,6 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
     currentSearchUrl = baseUrl + Uri.encodeFull(searchController.text);
     String urlString = currentSearchUrl + "&start=" + page.toString();
     urlString = urlString.replaceAll("%20", "+").replaceAll("&", "%26") + "&tbm=vid";
+    print("URL: ---------------- " + urlString);
     var response = await get(Uri.parse(urlString));
     if(response.statusCode == 200){
       String htmlDocument = response.body;
