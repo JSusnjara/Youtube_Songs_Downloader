@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 
 class MyTheme{
+
+  Color loadingBackground = Color.fromRGBO(25, 7, 97, 1);
+  Color loadingForeground = Color.fromRGBO(205, 220, 57, 1);
+
   ThemeData getThemeData(){
     return ThemeData(
       brightness: Brightness.dark,

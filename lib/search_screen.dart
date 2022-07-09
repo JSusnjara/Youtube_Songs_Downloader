@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:yt_songs/downloader_callback.dart';
+import 'package:yt_songs/loading.dart';
 import 'package:yt_songs/song.dart';
 import 'local_data.dart';
 import 'package:http/http.dart';
@@ -11,10 +12,11 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+  SearchScreen({Key? key}) : super(key: key);
 
   @override
-  _SearchScreenState createState() => _SearchScreenState();
+  final state = _SearchScreenState();
+  _SearchScreenState createState() => state;
 }
 
 class _SearchScreenState extends State<SearchScreen> {
@@ -28,6 +30,8 @@ class _SearchScreenState extends State<SearchScreen> {
   int currentlyLinkSearching = 0;
   int lastDownloaded = -1;
   String currentSearchUrl = "";
+  bool loading = false;
+  bool fetchingMoreSongs = false;
 
 
   @override
@@ -55,17 +59,21 @@ class _SearchScreenState extends State<SearchScreen> {
       String htmlDocument = response.body;
       scrape(htmlDocument);
     }
+    turnOffLoading();
   }
 
   void loadMore() async {
+    fetchingMoreSongs = true;
     page += 10;
-    String urlString = currentSearchUrl + "&start=" + page.toString();
-    urlString = urlString.replaceAll("%20", "+").replaceAll("&", "%26") + "&tbm=vid";
+    String urlString = currentSearchUrl.replaceAll("%20", "+").replaceAll("&", "%26");
+    urlString = urlString + "&start=" + page.toString() + "&tbm=vid";
     var response = await get(Uri.parse(urlString));
     if(response.statusCode == 200){
       String htmlDocument = response.body;
       scrape(htmlDocument);
     }
+    turnOffLoading();
+    fetchingMoreSongs = false;
   }
 
   void tidyScreen(){
@@ -158,6 +166,28 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  void turnOnLoading() {
+    setState(() {
+      loading = true;
+    });
+  }
+
+  void turnOffLoading() {
+    setState(() {
+      loading = false;
+    });
+  }
+
+  void cancelLoading(){
+    turnOffLoading();
+    //TODO: cancel searching / loading more
+    if(fetchingMoreSongs){
+
+    }
+    else{
+
+    }
+  }
 
 
   @override
@@ -170,7 +200,7 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: Text("Search"),
       ),
-      body: Column(
+      body: loading ? LoadingScreen(cancelLoading: cancelLoading,) : Column(
         children: [
           SizedBox(height: LocalData.deviceHeight * 0.02,),
           Row(
@@ -181,6 +211,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   controller: searchController,
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value){
+                    turnOnLoading();
                     tidyScreen();
                     search();
                   },
@@ -189,6 +220,7 @@ class _SearchScreenState extends State<SearchScreen> {
               SizedBox(width: LocalData.deviceWidth * 0.025,),
               TextButton(onPressed: (){
                 setState(() {
+                  turnOnLoading();
                   tidyScreen();
                   search();
                 });
@@ -227,6 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
               return GestureDetector(
                 onTap: (){
                   if(position == songs.length){
+                    turnOnLoading();
                     loadMore();
                   }
                   else{
