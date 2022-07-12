@@ -76,7 +76,7 @@ class MyClipper extends CustomClipper<Path> {
     double h = size.height;
 
     Path path = Path();
-    path.moveTo(w / 2, 0);
+    path.moveTo(w/2, 0);
     path.lineTo(w, h/2);
     path.lineTo(w/2, h);
     path.lineTo(0, h/2);
