@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:yt_songs/database_song.dart';
 import 'package:yt_songs/downloader_callback.dart';
 import 'package:yt_songs/song.dart';
-import 'local_data.dart';
+import 'shared_data.dart';
 import 'package:http/http.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -143,6 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void onItemTapped(Song song){
     queue.add(song);
+    SharedData.databaseManager.insertSong(DatabaseSong.withoutId(song.url, song.title, song.duration, downloadStatus.queued));
     if(currentlyLinkSearching == queue.length - 1){
       webViewController!.loadUrl(urlRequest: URLRequest(url: Uri.parse(song.url)));
     }
@@ -163,8 +165,8 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
 
-    LocalData.deviceWidth = MediaQuery.of(context).size.width;
-    LocalData.deviceHeight = MediaQuery.of(context).size.height;
+    SharedData.deviceWidth = MediaQuery.of(context).size.width;
+    SharedData.deviceHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -172,10 +174,10 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Column(
         children: [
-          SizedBox(height: LocalData.deviceHeight * 0.02,),
+          SizedBox(height: SharedData.deviceHeight * 0.02,),
           Row(
             children: [
-              SizedBox(width: LocalData.deviceWidth * 0.05,),
+              SizedBox(width: SharedData.deviceWidth * 0.05,),
               Expanded(
                 child: TextField(
                   controller: searchController,
@@ -186,7 +188,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
               ),
-              SizedBox(width: LocalData.deviceWidth * 0.025,),
+              SizedBox(width: SharedData.deviceWidth * 0.025,),
               TextButton(onPressed: (){
                 setState(() {
                   tidyScreen();
@@ -194,7 +196,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 });
               },
                   child: Text("Search")),
-              SizedBox(width: LocalData.deviceWidth * 0.05,),
+              SizedBox(width: SharedData.deviceWidth * 0.05,),
             ],
           ),
           Visibility(
@@ -234,10 +236,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   }
                 },
                 child: Card(
-                  margin: EdgeInsets.fromLTRB(LocalData.deviceWidth * 0.03, LocalData.deviceHeight * 0.01,
-                      LocalData.deviceWidth * 0.03, 0),
+                  margin: EdgeInsets.fromLTRB(SharedData.deviceWidth * 0.03, SharedData.deviceHeight * 0.01,
+                      SharedData.deviceWidth * 0.03, 0),
                   child: Padding(
-                    padding: EdgeInsets.all(LocalData.deviceWidth * 0.03),
+                    padding: EdgeInsets.all(SharedData.deviceWidth * 0.03),
                     child: position >= songs.length ?
                     Row(
                       children: [
@@ -250,7 +252,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Expanded(
                             child: Text(songs[position].title, maxLines: 2, overflow: TextOverflow.ellipsis,)),
-                        SizedBox(width: LocalData.deviceWidth * 0.03,),
+                        SizedBox(width: SharedData.deviceWidth * 0.03,),
                         Text(songs[position].duration),
                       ],
                     ),
