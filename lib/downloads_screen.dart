@@ -13,9 +13,7 @@ class DownloadsScreen extends StatefulWidget {
 
 class _DownloadsScreenState extends State<DownloadsScreen> {
 
-  List<DatabaseSong> songs = [];
   ScrollController listScrollController = ScrollController();
-
 
   @override
   void initState() {
@@ -23,7 +21,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
   }
 
   Future<void> getSongs() async{
-    songs = await SharedData.databaseManager.getSongs();
+    SharedData.downloadedSongs = await SharedData.databaseManager.getSongs();
     setState((){});
   }
 
@@ -39,7 +37,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
           Expanded(
             child: ListView.builder(
                 controller: listScrollController,
-                itemCount: songs.length,
+                itemCount: SharedData.downloadedSongs.length,
                 itemBuilder: (context, position) {
                   return GestureDetector(
                     onTap: () {
@@ -53,11 +51,14 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
                         padding: EdgeInsets.all(SharedData.deviceWidth * 0.03),
                         child: Row(
                           children: [
+                            SizedBox(width: SharedData.deviceWidth * 0.05,
+                              child: Text((position + 1).toString() + "."),),
+                            SizedBox(width: SharedData.deviceWidth * 0.02,),
                             Expanded(
-                                child: Text(songs[position].title, maxLines: 2,
+                                child: Text(SharedData.downloadedSongs[position].title, maxLines: 2,
                                   overflow: TextOverflow.ellipsis,)),
                             SizedBox(width: SharedData.deviceWidth * 0.03,),
-                            Text(songs[position].duration),
+                            Text(SharedData.downloadedSongs[position].duration),
                           ],
                         ),
                       ),
