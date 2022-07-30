@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:yt_songs/database_song.dart';
 import 'package:yt_songs/downloader_callback.dart';
 import 'package:yt_songs/loading.dart';
 import 'package:yt_songs/song.dart';
-import 'local_data.dart';
+import 'shared_data.dart';
 import 'package:http/http.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -20,11 +23,13 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
 
+  ReceivePort _port = ReceivePort();
   TextEditingController searchController = TextEditingController();
   ScrollController listScrollController = ScrollController();
   InAppWebViewController? webViewController;
   List<Song> songs = [];
   List<Song> queue = [];
+  List<Song> songsBeingDownloaded = [];
   int page = 0;
   int currentlyLinkSearching = 0;
   int lastDownloaded = -1;
@@ -41,8 +46,35 @@ class _SearchScreenState extends State<SearchScreen> {
   void init() async{
     WidgetsFlutterBinding.ensureInitialized();
     await FlutterDownloader.initialize();
+    _bindBackgroundIsolate();
     FlutterDownloader.registerCallback(DownloaderCallback.callbackDownloader);
     requestPersmission();
+  }
+
+  void _bindBackgroundIsolate() {
+    bool isSuccess = IsolateNameServer.registerPortWithName(
+        _port.sendPort, 'downloader_port');
+    if (!isSuccess) {
+      _unbindBackgroundIsolate();
+      _bindBackgroundIsolate();
+      return;
+    }
+    _port.listen((dynamic data) {
+      if(data[1] == DownloadTaskStatus.complete){
+        Song downloadedSong = queue.firstWhere((element) => element.downloadTaskId == data[0]);
+        SharedData.databaseManager.insertSong(DatabaseSong.withoutId(
+            downloadedSong.url, downloadedSong.title, downloadedSong.duration, downloadStatus.success));
+        SharedData.downloadedSongs.add(DatabaseSong.withoutId(
+            downloadedSong.url, downloadedSong.title, downloadedSong.duration, downloadStatus.success));
+        setState((){
+
+        });
+      }
+    });
+  }
+
+  void _unbindBackgroundIsolate() {
+    IsolateNameServer.removePortNameMapping('downloader_port');
   }
 
 
@@ -145,14 +177,35 @@ class _SearchScreenState extends State<SearchScreen> {
         url: link,
         //savedDir: "/storage/sdcard0/Music",
         savedDir: "/storage/emulated/0/Music",
-    fileName: queue[indexInQueue].title + ".mp3");
+        fileName: queue[indexInQueue].title + ".mp3");
+    setState((){
+      songsBeingDownloaded.add(queue.elementAt(currentlyLinkSearching - 1));
+    });
   }
 
   void onItemTapped(Song song){
-    queue.add(song);
-    if(currentlyLinkSearching == queue.length - 1){
-      webViewController!.loadUrl(urlRequest: URLRequest(url: Uri.parse(song.url)));
+    if(!songInQueue(song)) {// download
+      queue.add(song);
+      if (currentlyLinkSearching == queue.length - 1 && song.url != "") {
+        webViewController!.loadUrl(
+            urlRequest: URLRequest(url: Uri.parse(song.url)));
+      }
     }
+
+    //TODO: cancel if download link is just about to be found
+    else{ //cancel download
+      if(songBeingDownloaded(song)){
+        FlutterDownloader.cancel(taskId: song.downloadTaskId!);
+        removeFromQueue(song);
+        songsBeingDownloaded.removeAt(songsBeingDownloaded.indexWhere((element) => element.downloadTaskId == song.downloadTaskId));
+      }
+      else{
+        removeFromQueue(song);
+      }
+    }
+
+    setState((){
+    });
   }
 
   void requestPersmission() async {
@@ -164,6 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ].request();
     }
   }
+
 
   void turnOnLoading() {
     setState(() {
@@ -188,12 +242,35 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  bool songAlreadyDownloaded(Song currentSong){
+    String url = currentSong.url;
+    return SharedData.downloadedSongs.map((e) => e.url).contains(url);
+  }
+
+  bool songBeingDownloaded(Song currentSong){
+    String url = currentSong.url;
+    return songsBeingDownloaded.map((e) => e.url).contains(url);
+  }
+
+  bool songInQueue(Song currentSong){
+    String url = currentSong.url;
+    return queue.map((e) => e.url).contains(url);
+  }
+
+  void removeFromQueue(Song song){
+    String url = song.url;
+    queue.removeAt(queue.indexWhere((element) => element.url == url));
+    currentlyLinkSearching --;
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
 
-    LocalData.deviceWidth = MediaQuery.of(context).size.width;
-    LocalData.deviceHeight = MediaQuery.of(context).size.height;
+    SharedData.deviceWidth = MediaQuery.of(context).size.width;
+    SharedData.deviceHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -201,10 +278,10 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: loading ? LoadingScreen(cancelLoading: cancelLoading,) : Column(
         children: [
-          SizedBox(height: LocalData.deviceHeight * 0.02,),
+          SizedBox(height: SharedData.deviceHeight * 0.02,),
           Row(
             children: [
-              SizedBox(width: LocalData.deviceWidth * 0.05,),
+              SizedBox(width: SharedData.deviceWidth * 0.05,),
               Expanded(
                 child: TextField(
                   controller: searchController,
@@ -216,7 +293,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
               ),
-              SizedBox(width: LocalData.deviceWidth * 0.025,),
+              SizedBox(width: SharedData.deviceWidth * 0.025,),
               TextButton(onPressed: (){
                 setState(() {
                   turnOnLoading();
@@ -225,7 +302,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 });
               },
                   child: Text("Search")),
-              SizedBox(width: LocalData.deviceWidth * 0.05,),
+              SizedBox(width: SharedData.deviceWidth * 0.05,),
             ],
           ),
           Visibility(
@@ -266,10 +343,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   }
                 },
                 child: Card(
-                  margin: EdgeInsets.fromLTRB(LocalData.deviceWidth * 0.03, LocalData.deviceHeight * 0.01,
-                      LocalData.deviceWidth * 0.03, 0),
+                  margin: EdgeInsets.fromLTRB(SharedData.deviceWidth * 0.03, SharedData.deviceHeight * 0.01,
+                      SharedData.deviceWidth * 0.03, 0),
                   child: Padding(
-                    padding: EdgeInsets.all(LocalData.deviceWidth * 0.03),
+                    padding: EdgeInsets.all(SharedData.deviceWidth * 0.03),
                     child: position >= songs.length ?
                     Row(
                       children: [
@@ -280,9 +357,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     ) :
                     Row(
                       children: [
+                        songAlreadyDownloaded(songs[position]) ?
+                          Icon(Icons.save, color: Color.fromRGBO(0, 160, 10, 1), size: SharedData.deviceWidth * 0.05) : //downloaded
+                          (songBeingDownloaded(songs[position]) ?
+                            Icon(Icons.save_alt_outlined, color: Color.fromRGBO(240, 235, 0, 1), size: SharedData.deviceWidth * 0.05) : //downloading
+                            (songInQueue(songs[position]) ?
+                              Icon(Icons.access_time, color: Color.fromRGBO(0, 30, 220, 1), size: SharedData.deviceWidth * 0.05) : //in queue
+                              Icon(Icons.access_time, color: Color.fromRGBO(0, 0, 0, 0), size: SharedData.deviceWidth * 0.05))), //empty icon
+                        //Icon(Icons.access_time, color: Color.fromRGBO(0, 10, 80, 1), size: SharedData.deviceWidth * 0.05),
+                        SizedBox(width: SharedData.deviceWidth * 0.03,),
                         Expanded(
                             child: Text(songs[position].title, maxLines: 2, overflow: TextOverflow.ellipsis,)),
-                        SizedBox(width: LocalData.deviceWidth * 0.03,),
+                        SizedBox(width: SharedData.deviceWidth * 0.03,),
                         Text(songs[position].duration),
                       ],
                     ),

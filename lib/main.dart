@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:yt_songs/database.dart';
 import 'package:yt_songs/downloads_screen.dart';
-import 'package:yt_songs/local_data.dart';
+import 'package:yt_songs/shared_data.dart';
 import 'package:yt_songs/search_screen.dart';
 import 'package:yt_songs/settings.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  SharedData.databaseManager = DatabaseManager();
+  await SharedData.databaseManager.initialize().then((value) => {
+    runApp(MyApp())
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -24,7 +28,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
 
     return MaterialApp(
-      theme: LocalData.myTheme.getThemeData(),
+      theme: SharedData.myTheme.getThemeData(),
       home: Scaffold(
         bottomNavigationBar: BottomNavigationBar(
           items: [
