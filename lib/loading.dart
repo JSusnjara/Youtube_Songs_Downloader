@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:yt_songs/local_data.dart';
+import 'package:yt_songs/shared_data.dart';
 
 class LoadingScreen extends StatefulWidget {
 
@@ -53,9 +53,9 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
                       return ClipPath(
                         clipper: MyClipper(),
                         child: Container(
-                          width: LocalData.deviceWidth * 0.35,
-                          height: LocalData.deviceWidth * 0.35,
-                          color: LocalData.myTheme.loadingBackground,
+                          width: SharedData.deviceWidth * 0.35,
+                          height: SharedData.deviceWidth * 0.35,
+                          color: SharedData.myTheme.loadingBackground,
                           child: CustomPaint(
                             painter: MyCustomPainter(controller.value),
                           ),
@@ -97,7 +97,7 @@ class MyCustomPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint()
-      ..color = LocalData.myTheme.loadingForeground
+      ..color = SharedData.myTheme.loadingForeground
       ..style = PaintingStyle.fill;
 
     Rect rect = Rect.fromLTWH(0, 0, size.width, size.height * percentage);
