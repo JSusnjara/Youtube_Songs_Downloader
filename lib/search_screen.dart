@@ -88,6 +88,9 @@ class _SearchScreenState extends State<SearchScreen> {
     var response = await get(Uri.parse(urlString));
     if(response.statusCode == 200){
       String htmlDocument = response.body;
+      /*setState((){
+        searchController.text = htmlDocument;
+      });*/
       scrape(htmlDocument);
     }
     turnOffLoading();
@@ -132,9 +135,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if(linkFound && !titleFound && html.substring(i, i + str2.length) == str2){
         titleFound = true;
-        while(html.substring(i, i + 1) != ">")
+        for(int j = 0; j < 4; j++){
+          while(html.substring(i, i + 1) != ">")
+            i++;
           i++;
-        int titleStart = ++i;
+        }
+        int titleStart = i;
         while(html.substring(i, i + 6) != "</div>")
           i++;
         int titleEnd = i;
